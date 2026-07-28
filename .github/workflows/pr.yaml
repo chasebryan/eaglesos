@@ -8,9 +8,17 @@ name: PR
 
 on: [pull_request]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   whitespace:
     name: 'Trailing Whitespace'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-    - uses: seL4/ci-actions/git-diff-check@master
+    - uses: seL4/ci-actions/git-diff-check@51ae6f2dac97bc433a07420bdc9b3d1f726eaadb # master 2026-07-28
