@@ -1,22 +1,46 @@
 <!--
      Copyright 2024, UNSW
+     Copyright 2026, Chase Bryan
      SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# CI for LionsOS
+# Continuous integration for EaglesOS
 
-## Examples
+## Source checks
 
-The CI currently checks that each example system builds successfully.
-Right now there are no runtime checks.
+Source-check jobs validate repository source and workflow files without booting
+an EaglesOS system. The pinned Nix package containing the CI linters can be
+materialized with:
 
-If you have not run any LionsOS example systems before, please see
-the instructions at https://lionsos.org/docs/kitty/building/ for
-getting the source code and dependencies.
+```sh
+nix build .#ci-tools
+```
+
+The package provides `actionlint`, `shellcheck`, and `reuse` from the Nixpkgs
+revision recorded in `flake.lock`.
+
+## Example image builds
+
+The example jobs compile system images for the configured boards. A successful
+job means that the image was built; it does not mean that the image was booted
+or that its runtime behavior was tested.
 
 You can run the CI example script with:
-```
-./ci/examples.sh /path/to/lionsos /path/to/microkit/sdk
+
+```sh
+./ci/examples.sh /absolute/path/to/eaglesos /absolute/path/to/microkit/sdk
 ```
 
-Note that the paths should be absolute paths, not relative paths.
+Both arguments must be absolute paths. When using the repository's Nix
+development shell, run the same image builds with:
+
+```sh
+nix develop --ignore-environment -c bash -c \
+  './ci/examples.sh "$PWD" "$MICROKIT_SDK"'
+```
+
+## Runtime status
+
+EaglesOS CI does not yet boot the generated images or perform runtime checks.
+Runtime acceptance requires a separate QEMU or hardware harness with timeouts,
+positive pass conditions, failure detection, and retained logs.

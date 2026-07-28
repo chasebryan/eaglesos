@@ -1,5 +1,7 @@
 build/
+/ci_build/
 docs/book/
+/result
 .DS_Store
 *~
 \#*#

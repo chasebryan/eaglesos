@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 #
-# This script aims to build an already checked out version of LionsOS.
+# This script aims to build an already checked out version of EaglesOS.
 #
 
 set -e
 
 if [ "$#" -ne 2 ]; then
-    echo "usage: firewall.sh /path/to/lionsos /path/to/microkit/sdk"
+    echo "usage: firewall.sh /path/to/eaglesos /path/to/microkit/sdk"
     exit 1
 fi
 
@@ -23,16 +23,12 @@ build() {
 
     echo "CI|INFO: building firewall for board ${MICROKIT_BOARD} config ${MICROKIT_CONFIG}"
 
-    BUILD_DIR=$LIONSOS/ci_build/firewall/${MICROKIT_BOARD}/${MICROKIT_CONFIG}
-    rm -rf $BUILD_DIR
+    BUILD_DIR="${LIONSOS}/ci_build/firewall/${MICROKIT_BOARD}/${MICROKIT_CONFIG}"
+    rm -rf -- "$BUILD_DIR"
 
-    export BUILD_DIR=$BUILD_DIR
-    export MICROKIT_SDK=$MICROKIT_SDK
-    export MICROKIT_CONFIG=$MICROKIT_CONFIG
-    export MICROKIT_BOARD=$MICROKIT_BOARD
-    export LIONSOS=$LIONSOS
+    export BUILD_DIR MICROKIT_SDK MICROKIT_CONFIG MICROKIT_BOARD LIONSOS
 
-    cd $LIONSOS/examples/firewall
+    cd "$LIONSOS/examples/firewall"
     make
 }
 
