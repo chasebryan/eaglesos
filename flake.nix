@@ -1,5 +1,6 @@
 #
 # Copyright 2024, UNSW
+# Copyright 2026, Chase Bryan
 # SPDX-License-Identifier: BSD-2-Clause
 #
 {
@@ -33,8 +34,26 @@
       forAllSystems = with nixpkgs.lib; genAttrs (builtins.attrNames microkit-platforms);
     in
     {
-      # Shell for developing LionsOS.
-      # Includes dependencies for building LionsOS and its examples.
+      packages = forAllSystems
+        (system:
+          let
+            pkgs = import nixpkgs {
+              inherit system;
+            };
+          in
+          {
+            ci-tools = pkgs.symlinkJoin {
+              name = "eaglesos-ci-tools";
+              paths = with pkgs; [
+                actionlint
+                reuse
+                shellcheck
+              ];
+            };
+          });
+
+      # Shell for developing EaglesOS.
+      # Includes dependencies for building EaglesOS and its examples.
       devShells = forAllSystems
         (system: {
           default =

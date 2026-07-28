@@ -89,7 +89,7 @@ class KittyDisplay(framebuf.FrameBuffer):
 
 
 # Heartbeat to let the server know we still exist
-def heartbeat():
+async def heartbeat():
     global writer_stream
     while True:
         try:

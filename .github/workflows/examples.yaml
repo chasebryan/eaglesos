@@ -2,12 +2,20 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-name: Examples
+name: Example builds
 
 on:
   pull_request:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   MICROKIT_VERSION: 2.2.0
@@ -18,9 +26,12 @@ jobs:
   build_examples_linux_x86_64:
     name: Build example systems (Linux x86-64 via apt)
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
-      - name: Checkout LionsOS repository
-        uses: actions/checkout@v4
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Download Microkit SDK
         run: |
           wget ${{ env.MICROKIT_URL }}/microkit-sdk-${{ env.MICROKIT_VERSION }}-linux-x86-64.tar.gz
@@ -36,8 +47,8 @@ jobs:
         run: |
           python3 -m venv venv
           ./venv/bin/pip install --upgrade sdfgen==${{ env.SDFGEN_VERSION }}
-      - name: Build and run examples
-        run: ./ci/examples.sh ${PWD} ${PWD}/microkit-sdk-${{ env.MICROKIT_VERSION }}
+      - name: Build example systems
+        run: ./ci/examples.sh "$PWD" "$PWD/microkit-sdk-${MICROKIT_VERSION}"
         shell: bash
         env:
           PYTHON: ${{ github.workspace }}/venv/bin/python
@@ -45,20 +56,29 @@ jobs:
   build_examples_linux_x86_64_nix:
     name: Build example systems (Linux x86-64 via Nix)
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
-      - name: Checkout LionsOS repository
-        uses: actions/checkout@v4
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
-      - name: Run examples script
-        run: nix develop --ignore-environment -c bash -c './ci/examples.sh $(pwd) $MICROKIT_SDK'
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+      - name: Build example systems
+        run: |
+          # PWD and MICROKIT_SDK must expand inside the Nix development shell.
+          # shellcheck disable=SC2016
+          nix develop --ignore-environment -c bash -c 'exec ./ci/examples.sh "$PWD" "$MICROKIT_SDK"'
   build_examples_macos_aarch64_nix:
     name: Build example systems (macOS ARM64 via Nix)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
     runs-on: [self-hosted, macos, ARM64]
+    timeout-minutes: 120
     steps:
-      - name: Checkout LionsOS repository
-        uses: actions/checkout@v4
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           submodules: true
       # Because we use self-hosted actions and the checkout action does not clean submodules
       # we need to manually clean the submodules of the repo.
@@ -66,5 +86,8 @@ jobs:
         run: |
           git submodule foreach --recursive git clean -ffdx
           git submodule foreach --recursive git reset --hard
-      - name: Run examples script
-        run: nix develop --ignore-environment -c bash -c './ci/examples.sh $(pwd) $MICROKIT_SDK'
+      - name: Build example systems
+        run: |
+          # PWD and MICROKIT_SDK must expand inside the Nix development shell.
+          # shellcheck disable=SC2016
+          nix develop --ignore-environment -c bash -c 'exec ./ci/examples.sh "$PWD" "$MICROKIT_SDK"'

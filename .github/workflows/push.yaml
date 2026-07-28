@@ -2,19 +2,52 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-# Actions to run on Push and Pull Request
-name: CI
+# Source checks to run on Push and Pull Request
+name: Source checks
 
 on:
   push:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
-    name: License Check
-    runs-on: ubuntu-latest
+  python:
+    name: Python syntax
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-    - uses: seL4/ci-actions/license-check@master
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compile tracked Python sources
+        run: python3 ci/check_python_syntax.py
 
+  ci_tools:
+    name: Workflow, shell, and license checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+      - name: Build pinned CI tools
+        run: nix build .#ci-tools
+      - name: Validate GitHub Actions workflows
+        run: ./result/bin/actionlint
+      - name: Check shell scripts
+        run: ./result/bin/shellcheck ci/*.sh
+      - name: Check license compliance
+        run: ./result/bin/reuse lint
