@@ -43,6 +43,7 @@ REQUIRED_COMMANDS = (
     "perl",
     "python3",
     "qemu-system-aarch64",
+    "qemu-system-x86_64",
     "shasum",
     "unzip",
     "which",
@@ -60,6 +61,7 @@ VERSION_PROBES = {
     "make": ("--version",),
     "python3": ("--version",),
     "qemu-system-aarch64": ("--version",),
+    "qemu-system-x86_64": ("--version",),
 }
 
 
@@ -380,8 +382,36 @@ def check_microkit(report: Report, nix_store: Path | None) -> None:
         error or f"expected={EXPECTED_MICROKIT_VERSION} actual={version}",
     )
 
-    board = sdk / "board" / "qemu_virt_aarch64" / "debug"
-    report.add("microkit-qemu-board", board.is_dir(), str(board))
+    boards = {
+        "qemu_virt_aarch64": sdk / "board" / "qemu_virt_aarch64" / "debug",
+        "x86_64_generic": sdk / "board" / "x86_64_generic" / "debug",
+        "x86_64_generic_vtx": sdk / "board" / "x86_64_generic_vtx" / "debug",
+    }
+    for board_name, board in boards.items():
+        report.add(
+            f"microkit-board:{board_name}",
+            board.is_dir(),
+            str(board),
+        )
+
+    x86_kernel_files = [
+        board / "elf" / kernel
+        for board_name, board in boards.items()
+        if board_name.startswith("x86_64_")
+        for kernel in ("sel4.elf", "sel4_32.elf")
+    ]
+    missing_x86_kernels = [path for path in x86_kernel_files if not path.is_file()]
+    report.add(
+        "microkit-x86-kernels",
+        not missing_x86_kernels,
+        (
+            "both 64-bit kernels and 32-bit Multiboot-compatible kernels "
+            "are present for generic and VT-x boards; VT-x is inventory-only "
+            "until the Microkit 2.3/seL4 16 upgrade"
+            if not missing_x86_kernels
+            else "missing: " + ", ".join(str(path) for path in missing_x86_kernels)
+        ),
+    )
 
     executable = sdk / "bin" / "microkit"
     returncode, output, command_error = run([str(executable), "--help"])
