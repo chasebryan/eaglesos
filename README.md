@@ -31,6 +31,10 @@ The initial priorities are to:
 - attach every security or verification statement to evidence that applies to
   the exact EaglesOS revision being described.
 
+The repository assessment, product direction, support proposal, prioritized
+weak spots, milestone gates, and first execution package are recorded in the
+[EaglesOS takeover and delivery plan](docs/TAKEOVER_PLAN.md).
+
 ## Upstream baseline
 
 EaglesOS was created on July 28, 2026 from:
