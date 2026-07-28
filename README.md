@@ -4,8 +4,6 @@
      SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-![EaglesOS eagle mascot](assets/eaglesos-mascot.png)
-
 # EaglesOS
 
 **EaglesOS** is a downstream operating-system project maintained by Chase Bryan.
