@@ -89,7 +89,9 @@ The doctor exits nonzero unless all of the following hold:
 - every direct and nested submodule matches its recorded gitlink and has a clean
   worktree;
 - build commands resolve from the Nix store, not an ambient host `PATH`;
-- Microkit 2.2.0 contains the QEMU AArch64 debug board and its tool runs;
+- Microkit 2.2.0 contains the QEMU AArch64, generic x86_64, and x86_64 VT-x
+  debug boards, `sel4.elf` and `sel4_32.elf` for both x86 boards, and its tool
+  runs;
 - WASI SDK 27.0's compiler runs, matches its metadata, and compiles and links a
   small WebAssembly program; and
 - the pinned Python environment imports sdfgen 0.28.1.
@@ -131,10 +133,30 @@ locations, but those locations are outside the EaglesOS dependency identity.
 ## Build versus runtime evidence
 
 After the doctor passes, reproduce the image-build matrix described in
-[`ci/README.md`](../ci/README.md). Image construction is only the next gate.
-Boot acceptance requires a bounded QEMU harness with positive completion
-markers, explicit failure detection, controlled termination, and retained
-logs. Do not label a successful `make` invocation as a runtime pass.
+[`ci/README.md`](../ci/README.md). Image construction by itself is not runtime
+evidence.
+
+The first runtime gate is the non-VT-x x86_64 QEMU boot probe:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' \
+  develop --ignore-environment \
+  -c python3 ci/run_x86_boot.py
+```
+
+It builds the pinned sDDF HPET timer system for `x86_64_generic`, starts QEMU
+`q35` under TCG, and passes only after observing seL4 and Microkit startup plus
+three timer deliveries. Raw and normalized logs, the Microkit report, QEMU
+identity, marker results, timings, and artifact hashes form the retained
+evidence. See [`ci/README.md`](../ci/README.md) for explicit paths and exit
+codes.
+
+This gate deliberately does not execute `x86_64_generic_vtx`. Microkit 2.2.0
+contains that board package, so the doctor inventories it, but EaglesOS must
+not enable VT-x or a 64-bit guest until the planned Microkit 2.3/seL4 16
+upgrade and requalification are complete. Do not label a successful `make`
+invocation, this narrow timer gate, or an inherited upstream result as broader
+runtime or hardware support.
 
 ## Dependency boundaries
 

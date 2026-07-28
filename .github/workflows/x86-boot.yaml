@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 Chase Bryan
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: x86_64 q35 X0 boot
+
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  x0:
+    name: seL4/Microkit timer boot (q35, TCG)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout EaglesOS repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          enable_kvm: false
+
+      - name: Verify pinned toolchain
+        run: >-
+          nix develop --ignore-environment --no-write-lock-file
+          -c python3 ci/toolchain_doctor.py
+
+      - name: Run x86_64 q35 X0 boot gate
+        run: |
+          mkdir -p artifacts/x86-q35-x0
+          nix develop --ignore-environment --no-write-lock-file -c \
+            python3 ci/run_x86_boot.py \
+            --build-dir "$RUNNER_TEMP/eaglesos-x86-build" \
+            --log-dir "$GITHUB_WORKSPACE/artifacts/x86-q35-x0" \
+            --timeout 30 \
+            --build-timeout 600 \
+            --jobs 2
+
+      - name: Upload x86_64 q35 X0 evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: x86-q35-x0-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/x86-q35-x0/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 6
+          include-hidden-files: false
+          overwrite: false
