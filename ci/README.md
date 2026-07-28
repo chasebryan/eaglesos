@@ -6,6 +6,9 @@
 
 # Continuous integration for EaglesOS
 
+Materialize and verify the pinned developer toolchain before running these
+commands; see the [development environment guide](../docs/DEVELOPMENT.md).
+
 ## Source checks
 
 Source-check jobs validate repository source and workflow files without booting

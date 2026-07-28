@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 {
-  description = "A flake for building LionsOS";
+  description = "A flake for building EaglesOS";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
@@ -73,7 +73,7 @@
             in
             # mkShellNoCC, because we do not want the cc from stdenv to leak into this shell
             pkgs.mkShellNoCC rec {
-              name = "lionsos-dev";
+              name = "eaglesos-dev";
 
               microkit-platform = microkit-platforms.${system} or (throw "Unsupported system: ${system}");
               wasi-platform = wasi-platforms.${system} or (throw "Unsupported system: ${system}");
@@ -89,17 +89,40 @@
                   }
                   .${system} or (throw "Unsupported system: ${system}");
               };
+              env.WASI_SDK =
+                let
+                  archive = pkgs.fetchzip {
+                    url = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-27/wasi-sdk-27.0-${wasi-platform}.tar.gz";
+                    hash = {
+                      aarch64-darwin = "sha256-JxJNhpsx1d//zCi80bLSBd9Ve3hhIAD0K7PmqErqIxo=";
+                      x86_64-darwin = "sha256-2HKTO7yNh7gxEGCN9lto7+tDMtiFZHKnssJ069IQ3rs=";
+                      x86_64-linux = "sha256-yu0SExP5zd3AfPMVAhHognwDFBLThlKHLIK8Mxfa000=";
+                      aarch64-linux = "sha256-bNF6pht7o93A9aDQSGQlPj6N+UzKjhNQ/rDInayP7rU=";
+                    }.${system} or (throw "Unsupported system: ${system}");
+                  };
+                in
+                # The official Linux archive assumes an FHS loader and host
+                # libraries. Repair only its host ELF tools for the Nix store.
+                if pkgs.stdenv.isLinux then
+                  pkgs.stdenvNoCC.mkDerivation {
+                    pname = "wasi-sdk";
+                    version = "27.0";
+                    src = archive;
 
+                    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+                    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
 
-              env.WASI_SDK = pkgs.fetchzip {
-                url = "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-27/wasi-sdk-27.0-${wasi-platform}.tar.gz";
-                hash = {
-                    aarch64-darwin = "sha256-JxJNhpsx1d//zCi80bLSBd9Ve3hhIAD0K7PmqErqIxo=";
-                    x86_64-darwin = "sha256-2HKTO7yNh7gxEGCN9lto7+tDMtiFZHKnssJ069IQ3rs=";
-                    x86_64-linux = "sha256-yu0SExP5zd3AfPMVAhHognwDFBLThlKHLIK8Mxfa000=";
-                    aarch64-linux = "sha256-bNF6pht7o93A9aDQSGQlPj6N+UzKjhNQ/rDInayP7rU=";
-                }.${system} or (throw "Unsupported system: ${system}");
-              };
+                    dontPatchShebangs = true;
+                    dontStrip = true;
+                    dontUpdateAutotoolsGnuConfigScripts = true;
+                    installPhase = ''
+                      runHook preInstall
+                      cp -R . "$out"
+                      runHook postInstall
+                    '';
+                  }
+                else
+                  archive;
 
               nativeBuildInputs = with pkgs; [
                 git
