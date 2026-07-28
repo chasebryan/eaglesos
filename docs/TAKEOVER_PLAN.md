@@ -3,16 +3,31 @@
      SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# EaglesOS takeover and delivery plan
+# Initial EaglesOS takeover assessment
 
-Status: working plan for the EaglesOS bootstrap
+Status: historical assessment; product direction superseded on July 28, 2026
 
 Assessment date: July 28, 2026
 
 Assessed revision: `70ebca6` (`main`), based on LionsOS
 `4a5656a32574049817f62054832abeae85861ff5`
 
-## Executive decision
+## Supersession notice
+
+After this initial repository assessment, the product owner selected a native
+x86_64 general-purpose operating system with seL4 as the host kernel. That
+direction supersedes this document's appliance-only product recommendation,
+near-term non-goals, AArch64-first destination, milestone roadmap, first
+execution package, release progression, and open product decisions.
+
+The source audit, inherited-risk findings, dependency inventory and safety
+analysis below remain useful historical evidence. Current implementation and
+release decisions are governed by:
+
+- the [authoritative x86_64 product plan](PRODUCT_PLAN.md); and
+- [ADR-0001: x86_64 general-purpose architecture](adr/0001-x86_64-general-purpose-architecture.md).
+
+## Initial executive decision (superseded)
 
 EaglesOS should not try to become a conventional desktop or server operating
 system. The inherited project is a compact systems-construction framework that
